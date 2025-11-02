@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マジックeフラッシュカード</title>
+
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; }
+        select { cursor: pointer; }
+        button { cursor: pointer; }
+        .letter-box {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            border-radius: 12px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        }
+        .modal.show {
+            display: block;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+    <div id="app" class="max-w-6xl mx-auto"></div>
+
+    <!-- モーダル -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-blue-600">📘 保護者・教育者の方へ</h2>
+                <button onclick="closeModal()" class="text-4xl text-gray-500 hover:text-gray-700 font-bold leading-none">&times;</button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- マジックeのルールと例外 -->
+                <section>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">⚠️ マジックeには例外があります</h3>
+                    <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                        <p class="text-gray-700 mb-3 text-base">
+                            マジックeは<strong>「だいたい当てはまるルール」</strong>です。
+                        </p>
+                        <p class="text-sm text-gray-600 mb-3">
+                            <strong>例外の例：</strong>come, some, love, give, have, done, gone など
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            ルールを知っていると<strong>10個中7〜8個</strong>は読めるようになりますが、残りは「特別な読み方」として別に覚える必要があります。
+                        </p>
+                    </div>
+                </section>
+
+                <!-- ルールにとらわれやすい子への注意 -->
+                <section>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">🧒 ルールにとらわれやすいお子さんへ</h3>
+                    <div class="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                        <p class="text-gray-700 mb-3 text-base">
+                            発達特性として<strong>ルールを厳密に守ろうとする傾向</strong>が強いお子さんの場合、例外を受け入れられず混乱することがあります。
+                        </p>
+                        <p class="text-base text-gray-700 font-bold mb-2">💡 おすすめの声かけ：</p>
+                        <ul class="text-sm text-gray-600 list-disc list-inside space-y-1 ml-2">
+                            <li>「英語には"だいたい当てはまるルール"がたくさんあるんだよ」</li>
+                            <li>「comeは特別チーム。昔の人が使いやすいように変えちゃったんだって」</li>
+                            <li>「ルール通りじゃない単語を見つけたら、"レアカード発見！"って楽しもう」</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 詳しい情報へのリンク -->
+                <section>
+                    <div class="bg-green-50 border-2 border-green-300 rounded-lg p-4 text-center">
+                        <p class="text-gray-700 mb-3 text-base">
+                            📚 <strong>効果的な使い方・発達特性に応じた工夫</strong>など、<br>
+                            詳しい情報はnote記事をご覧ください
+                        </p>
+                        <a href="https://note.com/mypeco_poco/n/nafb21903e0d8" target="_blank" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg mt-2 transform hover:scale-105 transition">
+                            📝 note記事を読む
+                        </a>
+                    </div>
+                </section>
+            </div>
+
+            <button onclick="closeModal()" class="mt-6 w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transform hover:scale-105 transition">
+                閉じる
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // マジックe単語データ（全25個）
+        const allWords = [
+            // a → ā の単語（6個）
+            { word: 'make', jp: '<ruby>作<rt>つく</rt></ruby>る', emoji: '🛠️', letters: ['m', 'a', 'k', 'e'], blanks: [1, 3] },
+            { word: 'take', jp: '<ruby>取<rt>と</rt></ruby>る', emoji: '✋', letters: ['t', 'a', 'k', 'e'], blanks: [1, 3] },
+            { word: 'cake', jp: 'ケーキ', emoji: '🍰', letters: ['c', 'a', 'k', 'e'], blanks: [1, 3] },
+            { word: 'lake', jp: '<ruby>湖<rt>みずうみ</rt></ruby>', emoji: '🏞️', letters: ['l', 'a', 'k', 'e'], blanks: [1, 3] },
+            { word: 'wake', jp: '<ruby>起<rt>お</rt></ruby>きる', emoji: '⏰', letters: ['w', 'a', 'k', 'e'], blanks: [1, 3] },
+            { word: 'safe', jp: '<ruby>安全<rt>あんぜん</rt></ruby>な', emoji: '🛡️', letters: ['s', 'a', 'f', 'e'], blanks: [1, 3] },
+            
+            // i → ī の単語（6個）
+            { word: 'like', jp: '<ruby>好<rt>す</rt></ruby>き', emoji: '💕', letters: ['l', 'i', 'k', 'e'], blanks: [1, 3] },
+            { word: 'bike', jp: '<ruby>自転車<rt>じてんしゃ</rt></ruby>', emoji: '🚲', letters: ['b', 'i', 'k', 'e'], blanks: [1, 3] },
+            { word: 'ride', jp: '<ruby>乗<rt>の</rt></ruby>る', emoji: '🎢', letters: ['r', 'i', 'd', 'e'], blanks: [1, 3] },
+            { word: 'time', jp: '<ruby>時間<rt>じかん</rt></ruby>', emoji: '⏰', letters: ['t', 'i', 'm', 'e'], blanks: [1, 3] },
+            { word: 'five', jp: '5', emoji: '5️⃣', letters: ['f', 'i', 'v', 'e'], blanks: [1, 3] },
+            { word: 'nine', jp: '9', emoji: '9️⃣', letters: ['n', 'i', 'n', 'e'], blanks: [1, 3] },
+            
+            // o → ō の単語（6個）
+            { word: 'home', jp: '<ruby>家<rt>いえ</rt></ruby>', emoji: '🏠', letters: ['h', 'o', 'm', 'e'], blanks: [1, 3] },
+            { word: 'nose', jp: '<ruby>鼻<rt>はな</rt></ruby>', emoji: '👃', letters: ['n', 'o', 's', 'e'], blanks: [1, 3] },
+            { word: 'rope', jp: 'ロープ', emoji: '🪢', letters: ['r', 'o', 'p', 'e'], blanks: [1, 3] },
+            { word: 'bone', jp: '<ruby>骨<rt>ほね</rt></ruby>', emoji: '🦴', letters: ['b', 'o', 'n', 'e'], blanks: [1, 3] },
+            { word: 'phone', jp: '<ruby>電話<rt>でんわ</rt></ruby>', emoji: '📱', letters: ['p', 'h', 'o', 'n', 'e'], blanks: [2, 4] },
+            { word: 'June', jp: '6<ruby>月<rt>がつ</rt></ruby>', emoji: '📅', letters: ['J', 'u', 'n', 'e'], blanks: [1, 3] },
+            
+            // u → ū の単語（2個）
+            { word: 'use', jp: '<ruby>使<rt>つか</rt></ruby>う', emoji: '🔧', letters: ['u', 's', 'e'], blanks: [0, 2] },
+            { word: 'cute', jp: 'かわいい', emoji: '🥰', letters: ['c', 'u', 't', 'e'], blanks: [1, 3] },
+            
+            // その他の単語（5個）
+            { word: 'name', jp: '<ruby>名前<rt>なまえ</rt></ruby>', emoji: '📛', letters: ['n', 'a', 'm', 'e'], blanks: [1, 3] },
+            { word: 'game', jp: 'ゲーム', emoji: '🎮', letters: ['g', 'a', 'm', 'e'], blanks: [1, 3] },
+            { word: 'nice', jp: '<ruby>素敵<rt>すてき</rt></ruby>な', emoji: '😊', letters: ['n', 'i', 'c', 'e'], blanks: [1, 3] },
+            { word: 'fine', jp: '<ruby>元気<rt>げんき</rt></ruby>な', emoji: '👍', letters: ['f', 'i', 'n', 'e'], blanks: [1, 3] },
+            { word: 'white', jp: '<ruby>白<rt>しろ</rt></ruby>い', emoji: '⚪', letters: ['w', 'h', 'i', 't', 'e'], blanks: [2, 4] }
+        ];
+
+        let quizWords = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = []; // 2つの回答を保存
+        let currentBlankIndex = 0; // 現在どちらの空欄を答えているか（0 or 1）
+        let correctCount = 0;
+        let isAnswered = false;
+        let isQuizStarted = false;
+        let wrongAnswers = [];
+        let showRecords = false;
+
+        // モーダル制御
+        function openModal() {
+            document.getElementById('infoModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('infoModal').classList.remove('show');
+        }
+
+        // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('infoModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // ランダムに10問を選ぶ
+        function startQuiz() {
+            const shuffled = [...allWords].sort(() => Math.random() - 0.5);
+            quizWords = shuffled.slice(0, 10);
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            currentBlankIndex = 0;
+            correctCount = 0;
+            isAnswered = false;
+            isQuizStarted = true;
+            wrongAnswers = [];
+            render();
+        }
+
+        // LocalStorageから記録を読み込む
+        function loadRecords() {
+            const saved = localStorage.getItem('magicERecords');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        // LocalStorageに記録を保存する
+        function saveRecord(record) {
+            const records = loadRecords();
+            records.push(record);
+            localStorage.setItem('magicERecords', JSON.stringify(records));
+        }
+
+        // 全記録を削除
+        function clearAllRecords() {
+            if (confirm('本当に全ての記録を削除しますか?')) {
+                localStorage.removeItem('magicERecords');
+                render();
+            }
+        }
+
+        // 回答処理
+        function handleAnswer(value) {
+            if (isAnswered) return;
+            
+            const currentWord = quizWords[currentQuestionIndex];
+            userAnswers[currentBlankIndex] = value;
+            
+            // 1つ目の母音を答えた場合
+            if (currentBlankIndex === 0) {
+                currentBlankIndex = 1;
+                render();
+            } else {
+                // 2つ目の母音を答えた場合 → 判定
+                const correctVowel1 = currentWord.letters[currentWord.blanks[0]];
+                const correctVowel2 = currentWord.letters[currentWord.blanks[1]];
+                const isCorrect = userAnswers[0] === correctVowel1 && userAnswers[1] === correctVowel2;
+                
+                if (isCorrect) {
+                    correctCount++;
+                } else {
+                    wrongAnswers.push({
+                        word: currentWord.word,
+                        jp: currentWord.jp,
+                        correct: `${correctVowel1}, ${correctVowel2}`,
+                        answer: `${userAnswers[0]}, ${userAnswers[1]}`
+                    });
+                }
+                
+                isAnswered = true;
+                render();
+                
+                // 自動で読み上げ
+                setTimeout(() => {
+                    speak(currentWord.word);
+                }, 300);
+            }
+        }
+
+        // 次の問題へ
+        function nextQuestion() {
+            if (currentQuestionIndex < quizWords.length - 1) {
+                currentQuestionIndex++;
+                userAnswers = [];
+                currentBlankIndex = 0;
+                isAnswered = false;
+                render();
+            } else {
+                showResult();
+            }
+        }
+
+        // 結果画面
+        function showResult() {
+            isQuizStarted = false;
+            
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            const accuracy = Math.round((correctCount / quizWords.length) * 100);
+            
+            saveRecord({
+                date: dateStr,
+                accuracy: accuracy,
+                correct: correctCount,
+                total: quizWords.length,
+                wrongAnswers: [...wrongAnswers]
+            });
+            
+            render();
+        }
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.7;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function getVowelColor(vowel) {
+            const colors = {
+                'a': 'red',
+                'e': 'blue',
+                'i': 'green',
+                'o': 'orange',
+                'u': 'purple'
+            };
+            return colors[vowel] || 'gray';
+        }
+
+        function render() {
+            // 記録ページを表示
+            if (showRecords) {
+                const records = loadRecords();
+                document.getElementById('app').innerHTML = `
+                    <div class="flex items-center justify-center min-h-screen py-8">
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-4xl w-full">
+                            <div class="flex justify-between items-center mb-6">
+                                <h1 class="text-4xl font-bold text-blue-600">📋 学習記録</h1>
+                                <button onclick="showRecords = false; render();" class="bg-gray-500 hover:bg-gray-600 text-white text-lg font-bold px-6 py-3 rounded-xl shadow-lg transform hover:scale-105 transition">
+                                    ← 戻る
+                                </button>
+                            </div>
+                            
+                            ${records.length === 0 ? `
+                                <div class="text-center py-12">
+                                    <p class="text-2xl text-gray-500 mb-4">📝 まだ記録がありません</p>
+                                    <p class="text-lg text-gray-400">クイズを完了すると自動的に記録されます</p>
+                                </div>
+                            ` : `
+                                <div class="mb-4 flex justify-end">
+                                    <button onclick="clearAllRecords()" class="bg-red-500 hover:bg-red-600 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-lg transform hover:scale-105 transition">
+                                        🗑️ 一括削除
+                                    </button>
+                                </div>
+                                
+                                <div class="space-y-3 max-h-[600px] overflow-y-auto">
+                                    ${records.reverse().map((record, index) => `
+                                        <div class="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-200 rounded-xl p-4">
+                                            <div class="flex items-center justify-between gap-4">
+                                                <span class="text-sm font-bold text-gray-700 whitespace-nowrap">📅 ${record.date}</span>
+                                                <span class="text-xl font-bold whitespace-nowrap ${record.accuracy === 100 ? 'text-green-600' : record.accuracy >= 80 ? 'text-blue-600' : record.accuracy >= 60 ? 'text-orange-600' : 'text-red-600'}">
+                                                    ${record.accuracy}% (${record.correct}/${record.total})
+                                                </span>
+                                                <div class="flex-1 min-w-0">
+                                                    ${record.wrongAnswers && record.wrongAnswers.length > 0 ? `
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-xs font-bold text-red-600 whitespace-nowrap">❌</span>
+                                                            <div class="flex flex-wrap gap-1">
+                                                                ${record.wrongAnswers.map(wa => `
+                                                                    <span class="inline-block bg-red-50 px-2 py-0.5 rounded text-xs font-bold text-gray-800">
+                                                                        ${wa.word}
+                                                                    </span>
+                                                                `).join('')}
+                                                            </div>
+                                                        </div>
+                                                    ` : `
+                                                        <span class="text-xs font-bold text-green-700">🎉 全問正解！</span>
+                                                    `}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (!isQuizStarted) {
+                if (quizWords.length === 0) {
+                    // スタート画面
+                    document.getElementById('app').innerHTML = `
+                        <div class="flex items-center justify-center min-h-screen">
+                            <div class="bg-white rounded-3xl shadow-2xl p-12 text-center max-w-2xl">
+                                <h1 class="text-5xl font-bold text-blue-600 mb-6">✨ マジックe<br>フラッシュカード</h1>
+                                <p class="text-2xl text-gray-700 mb-4">2つの母音を選ぼう！</p>
+                                <div class="bg-blue-50 border-2 border-blue-300 rounded-lg p-6 mb-8">
+                                    <p class="text-lg text-gray-700 mb-3">📝 <strong>全25個</strong>の単語から<strong>ランダムに10問</strong>出題されます</p>
+                                    <p class="text-lg text-gray-700 mb-3">✨ 最後の<strong>e</strong>があると、<br>最初の母音が<strong>アルファベット読み</strong>になるよ！</p>
+                                    <p class="text-lg text-gray-700 mb-3">🔊 回答すると<strong>自動で読み上げ</strong>されます</p>
+                                    <p class="text-lg text-gray-700">➡️ ボタンを押して次の問題へ進もう！</p>
+                                </div>
+                                <button onclick="startQuiz()" class="bg-blue-500 hover:bg-blue-600 text-white text-3xl font-bold px-12 py-6 rounded-2xl shadow-lg transform hover:scale-105 transition mb-4">
+                                    🚀 スタート！
+                                </button>
+                                <div class="flex justify-center gap-3">
+                                    <button onclick="showRecords = true; render();" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg transform hover:scale-105 transition">
+                                        📋 記録を見る
+                                    </button>
+                                    <button onclick="openModal()" class="bg-purple-500 hover:bg-purple-600 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg transform hover:scale-105 transition">
+                                        📘 保護者・教育者の方へ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // 結果画面
+                    const score = Math.round((correctCount / quizWords.length) * 100);
+                    let message = '';
+                    let emoji = '';
+                    if (score === 100) {
+                        message = 'パーフェクト！すごい！';
+                        emoji = '🎉🏆✨';
+                    } else if (score >= 80) {
+                        message = 'よくできました！';
+                        emoji = '🎊👏';
+                    } else if (score >= 60) {
+                        message = 'がんばりました！';
+                        emoji = '💪😊';
+                    } else {
+                        message = 'もう一度挑戦してみよう！';
+                        emoji = '📚💡';
+                    }
+
+                    document.getElementById('app').innerHTML = `
+                        <div class="flex items-center justify-center min-h-screen">
+                            <div class="bg-white rounded-3xl shadow-2xl p-12 text-center max-w-2xl">
+                                <h1 class="text-5xl font-bold text-blue-600 mb-6">🎯 結果発表</h1>
+                                <div class="text-8xl mb-6">${emoji}</div>
+                                <p class="text-3xl font-bold text-gray-800 mb-4">${message}</p>
+                                <div class="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-300 rounded-2xl p-8 mb-8">
+                                    <p class="text-6xl font-bold text-blue-600 mb-4">${correctCount} / ${quizWords.length}</p>
+                                    <p class="text-4xl font-bold text-green-600">${score}%</p>
+                                </div>
+                                <button onclick="location.reload()" class="bg-green-500 hover:bg-green-600 text-white text-2xl font-bold px-10 py-5 rounded-2xl shadow-lg transform hover:scale-105 transition mb-4">
+                                    🔄 もう一度挑戦する
+                                </button>
+                                <div class="flex justify-center gap-3">
+                                    <button onclick="showRecords = true; render();" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg transform hover:scale-105 transition">
+                                        📋 記録を見る
+                                    </button>
+                                    <button onclick="openModal()" class="bg-purple-500 hover:bg-purple-600 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg transform hover:scale-105 transition">
+                                        📘 保護者・教育者の方へ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // クイズ画面
+            const currentWord = quizWords[currentQuestionIndex];
+            const progress = currentQuestionIndex + 1;
+            const correctVowel1 = currentWord.letters[currentWord.blanks[0]];
+            const correctVowel2 = currentWord.letters[currentWord.blanks[1]];
+            const isCorrect = isAnswered && userAnswers[0] === correctVowel1 && userAnswers[1] === correctVowel2;
+            const isIncorrect = isAnswered && !isCorrect;
+
+            document.getElementById('app').innerHTML = `
+                <div class="flex items-center justify-center min-h-screen">
+                    <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-3xl w-full">
+                        <!-- プログレスバー -->
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xl font-bold text-gray-600">問題 ${progress} / ${quizWords.length}</span>
+                                <span class="text-xl font-bold text-green-600">✓ ${correctCount}問正解</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div class="bg-blue-500 h-4 rounded-full transition-all duration-300" style="width: ${(progress / quizWords.length) * 100}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- 日本語の意味 -->
+                        <div class="text-center mb-4">
+                            <p class="text-6xl font-bold text-gray-800 mb-2">${currentWord.jp} ${currentWord.emoji}</p>
+                            ${!isAnswered ? `
+                                <button onclick="speak('${currentWord.word}')" class="bg-blue-500 hover:bg-blue-600 text-white text-xl font-bold px-6 py-3 rounded-xl shadow-lg transform hover:scale-105 transition flex items-center gap-2 mx-auto">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-2.828a9 9 0 000-12.728M12 18v.01"></path></svg>
+                                    <span>🔊 聞く</span>
+                                </button>
+                            ` : ''}
+                        </div>
+
+                        <!-- 単語ボックス -->
+                        <div class="flex items-center justify-center gap-2 mb-6">
+                            ${currentWord.letters.map((letter, index) => {
+                                const isBlank1 = index === currentWord.blanks[0];
+                                const isBlank2 = index === currentWord.blanks[1];
+                                
+                                if (isBlank1) {
+                                    const answered = userAnswers[0];
+                                    const bgColor = isAnswered ? 
+                                        (answered === correctVowel1 ? 'bg-green-200 border-4 border-green-500' : 'bg-red-200 border-4 border-red-500') :
+                                        (answered ? 'bg-blue-100 border-4 border-blue-400' : 'bg-yellow-100 border-4 border-yellow-400');
+                                    return `
+                                        <div class="letter-box ${bgColor}" style="width: 70px; height: 70px; font-size: 2rem;">
+                                            ${answered || '?'}
+                                        </div>
+                                    `;
+                                } else if (isBlank2) {
+                                    const answered = userAnswers[1];
+                                    const bgColor = isAnswered ? 
+                                        (answered === correctVowel2 ? 'bg-green-200 border-4 border-green-500' : 'bg-red-200 border-4 border-red-500') :
+                                        (answered ? 'bg-blue-100 border-4 border-blue-400' : currentBlankIndex === 1 ? 'bg-yellow-100 border-4 border-yellow-400' : 'bg-gray-100 border-2 border-gray-300');
+                                    return `
+                                        <div class="letter-box ${bgColor}" style="width: 70px; height: 70px; font-size: 2rem;">
+                                            ${answered || '?'}
+                                        </div>
+                                    `;
+                                } else {
+                                    return `
+                                        <div class="letter-box bg-gray-200 text-gray-700" style="width: 70px; height: 70px; font-size: 2rem;">
+                                            ${letter}
+                                        </div>
+                                    `;
+                                }
+                            }).join('')}
+                        </div>
+
+                        ${!isAnswered ? `
+                            <!-- 回答ボタン -->
+                            <div class="mb-4 text-center">
+                                <p class="text-xl font-bold text-blue-600 mb-2">
+                                    ${currentBlankIndex === 0 ? '1つ目の母音を選んでね！' : '2つ目の母音を選んでね！'}
+                                </p>
+                            </div>
+                            <div class="grid grid-cols-5 gap-3 mb-4">
+                                ${['a', 'e', 'i', 'o', 'u'].map(v => {
+                                    const vColor = getVowelColor(v);
+                                    return `
+                                        <button onclick="handleAnswer('${v}')" class="bg-${vColor}-500 hover:bg-${vColor}-600 text-white text-4xl font-bold py-6 rounded-xl shadow-lg transform hover:scale-105 transition">
+                                            ${v}
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : `
+                            <!-- 結果表示 -->
+                            <div class="mb-4">
+                                ${isCorrect ? `
+                                    <div class="bg-green-100 border-4 border-green-500 rounded-xl p-4 text-center">
+                                        <p class="text-4xl mb-2">🎉</p>
+                                        <p class="text-2xl font-bold text-green-700 mb-2">正解！</p>
+                                        <p class="text-7xl font-bold text-gray-800 mb-3">${currentWord.word}</p>
+                                        <button onclick="speak('${currentWord.word}')" class="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-2 mb-2  w-full hover:bg-yellow-100 cursor-pointer">
+                                            <p class="text-xl text-yellow-700 font-bold">😄 言ってみよう！</p>
+                                        </button>
+                                        <div class="bg-blue-50 border-2 border-blue-400 rounded-lg p-2 mt-2">
+                                            <p class="text-base text-blue-700 font-bold">✨ マジックe！</p>
+                                            <p class="text-sm text-gray-700 mt-1"><span class="font-bold text-${getVowelColor(correctVowel1)}-600">${correctVowel1}</span> が <span class="font-bold text-blue-600">「${correctVowel1.toUpperCase()}」</span> と読むよ！</p>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="bg-blue-100 border-4 border-blue-500 rounded-xl p-4 text-center">
+                                        <p class="text-lg text-gray-600 mb-2">正しい答えは <span class="font-bold text-${getVowelColor(correctVowel1)}-600 text-4xl">${correctVowel1}</span> と <span class="font-bold text-${getVowelColor(correctVowel2)}-600 text-4xl">${correctVowel2}</span> だよ！</p>
+                                        <p class="text-7xl font-bold text-gray-800 mb-2">${currentWord.word}</p>
+                                        <button onclick="speak('${currentWord.word}')" class="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-2 mb-2 w-full hover:bg-yellow-100 cursor-pointer">
+                                            <p class="text-xl text-yellow-700 font-bold">😄 言ってみよう！</p>
+                                        </button>
+                                        <div class="bg-blue-50 border-2 border-blue-400 rounded-lg p-2">
+                                            <p class="text-base text-blue-700 font-bold">✨ マジックe！</p>
+                                            <p class="text-sm text-gray-700 mt-1"><span class="font-bold text-${getVowelColor(correctVowel1)}-600">${correctVowel1}</span> が <span class="font-bold text-blue-600">「${correctVowel1.toUpperCase()}」</span> と読むよ！</p>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+
+                            <!-- 次へボタン -->
+                            <button onclick="nextQuestion()" class="w-full bg-blue-500 hover:bg-blue-600 text-white text-2xl font-bold py-4 rounded-xl shadow-lg transform hover:scale-105 transition">
+                                ${currentQuestionIndex < quizWords.length - 1 ? '➡️ 次の問題へ' : '📊 結果を見る'}
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ページ読み込み時に初期化＆描画
+        render();
+    </script>
+</body>
+</html>
