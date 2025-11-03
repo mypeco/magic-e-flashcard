@@ -40,7 +40,7 @@ magic-e-flashcard-with-modal.html をブラウザで開く
 効果的な学習方法
 
 詳しくは、フラッシュカード内の「📘 保護者・教育者の方へ」ボタン、または以下のnote記事をご覧ください。
-👉 note記事：マジックeフラッシュカードの使い方
+👉 note記事：https://note.com/mypeco_poco/n/nafb21903e0d8
 🧒 こんなお子さんにおすすめ
 
 視覚優位（見て覚えるのが得意）
@@ -89,12 +89,6 @@ noteのコメント欄で使用報告・感想
 
 皆さんの声が、より良い教材作りの励みになります🌈
 
-📂 関連教材
-CVC母音フラッシュカード
 
-
-
-⭐ Star をお願いします！
-このプロジェクトが役に立ったら、ぜひ Star ⭐ をつけてください！
 
 Made with 💖 for children who learn visually
